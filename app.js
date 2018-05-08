@@ -1,3 +1,7 @@
+//https://github.com/watson-developer-cloud/node-sdk/blob/master/examples/conversation.v1.js
+
+
+
 /**
  * Copyright 2015 IBM Corp. All Rights Reserved.
  *
@@ -19,6 +23,7 @@
 var express = require('express'); // app server
 var bodyParser = require('body-parser'); // parser for post requests
 var watson = require('watson-developer-cloud'); // watson sdk
+var request = require('request');
 
 var app = express();
 
@@ -39,27 +44,46 @@ var assistant = new watson.AssistantV1({
 // Endpoint to be call from the client side
 app.post('/api/message', function(req, res) {
   var workspace = process.env.WORKSPACE_ID || '<workspace-id>';
+
   if (!workspace || workspace === '<workspace-id>') {
     return res.json({
       'output': {
-        'text': 'The app has not been configured with a <b>WORKSPACE_ID</b> environment variable. Please refer to the ' + '<a href="https://github.com/watson-developer-cloud/assistant-simple">README</a> documentation on how to set this variable. <br>' + 'Once a workspace has been defined the intents may be imported from ' + '<a href="https://github.com/watson-developer-cloud/assistant-simple/blob/master/training/car_workspace.json">here</a> in order to get a working application.'
+        'text': workspace + 'The app has not been configured with a <b>WORKSPACE_ID</b> environment variable. Please refer to the ' + '<a href="https://github.com/watson-developer-cloud/assistant-simple">README</a> documentation on how to set this variable. <br>' + 'Once a workspace has been defined the intents may be imported from ' + '<a href="https://github.com/watson-developer-cloud/assistant-simple/blob/master/training/car_workspace.json">here</a> in order to get a working application.'
       }
     });
   }
+
+  message(req, workspace)
+    .then(response => {
+      console.log(JSON.stringify(response, null, 2), '\n--------');
+      res.json(response)
+    })
+    .catch(err => {
+      // APPLICATION-SPECIFIC CODE TO PROCESS THE ERROR
+      // FROM CONVERSATION SERVICE
+      console.error(JSON.stringify(err, null, 2));
+      res.status(err.code || 500).json(err)
+    });
+
+});
+
+const message = (req, workspace) => {
   var payload = {
     workspace_id: workspace,
     context: req.body.context || {},
     input: req.body.input || {}
   };
-
-  // Send the input to the assistant service
-  assistant.message(payload, function(err, data) {
-    if (err) {
-      return res.status(err.code || 500).json(err);
-    }
-    return res.json(updateMessage(payload, data));
+  return new Promise((resolve, reject) => {
+    // Send the input to the assistant service
+    assistant.message(payload, function(err, data) {
+      if (err) {
+        reject(err);
+      }
+        resolve(updateMessage(payload, data));
+    });
   });
-});
+};
+
 
 /**
  * Updates the response text using the intent confidence
