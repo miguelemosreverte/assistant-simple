@@ -26,6 +26,7 @@ var watson = require('watson-developer-cloud'); // watson sdk
 var request = require('request');
 const externalAPI = require('./firstLibraryAttempt.js');
 const watsonMessage = require('./watsonMessage.js');
+const cloudant = require('./cloudant.js');
 
 var app = express();
 
@@ -53,7 +54,12 @@ app.post('/api/message', function(req, res) {
       message(req, workspace, assistantInstance)
         .then(response => {
           //console.log(JSON.stringify(response, null, 2), '\n--------');
-          response.output.text += data
+
+
+          var deducible = "a"
+          var edad = "19 a 24"
+
+          response.output.text +=  data[deducible][edad]
 
           res.json(response)
         })
@@ -66,7 +72,7 @@ app.post('/api/message', function(req, res) {
 
 
 
-  externalAPI.MeLiPromise.then(googleResponse => {
+  cloudant.getData.then(data => {
       enrichConversation(googleResponse)
   })
   .catch(err => {
