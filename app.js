@@ -26,6 +26,7 @@ var watson = require('watson-developer-cloud'); // watson sdk
 var request = require('request');
 const externalAPI = require('./firstLibraryAttempt.js');
 const watsonMessage = require('./watsonMessage.js');
+const googleSpreadsheet = require('./quickstart_GoogleSpreadsheet.js');
 
 var app = express();
 
@@ -53,7 +54,14 @@ app.post('/api/message', function(req, res) {
       message(req, workspace, assistantInstance)
         .then(response => {
           //console.log(JSON.stringify(response, null, 2), '\n--------');
-          response.output.text += data
+
+          console.log(response);
+          if (response.context.spreadsheet)
+          {
+            delete response.context.spreadsheet;
+            response.output.text += data
+          }
+
 
           res.json(response)
         })
@@ -66,7 +74,7 @@ app.post('/api/message', function(req, res) {
 
 
 
-  externalAPI.MeLiPromise.then(googleResponse => {
+  externalAPI.googlePromise.then(googleResponse => {
       enrichConversation(googleResponse)
   })
   .catch(err => {
