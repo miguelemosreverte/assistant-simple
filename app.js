@@ -53,17 +53,29 @@ app.post('/api/message', function(req, res) {
     });
   }
 
-  message(req, workspace)
-    .then(response => {
-      console.log(JSON.stringify(response, null, 2), '\n--------');
-      res.json(response)
-    })
-    .catch(err => {
-      // APPLICATION-SPECIFIC CODE TO PROCESS THE ERROR
-      // FROM CONVERSATION SERVICE
-      console.error(JSON.stringify(err, null, 2));
-      res.status(err.code || 500).json(err)
-    });
+  MeLiPromise.then(googleResponse => {
+
+
+
+    message(req, workspace)
+      .then(response => {
+        //console.log(JSON.stringify(response, null, 2), '\n--------');
+
+
+        response.output.text += googleResponse
+
+        res.json(response)
+      })
+      .catch(err => {
+        // APPLICATION-SPECIFIC CODE TO PROCESS THE ERROR
+        // FROM CONVERSATION SERVICE
+        console.error(JSON.stringify(err, null, 2));
+        res.status(err.code || 500).json(err)
+      });
+})
+.catch(err => {
+  res.status(err.code || 500).json(err)
+});
 
 });
 
@@ -73,17 +85,43 @@ const message = (req, workspace) => {
     context: req.body.context || {},
     input: req.body.input || {}
   };
-  return new Promise((resolve, reject) => {
+
+const watsonPromise = new Promise((resolve, reject) => {
     // Send the input to the assistant service
     assistant.message(payload, function(err, data) {
-      if (err) {
-        reject(err);
-      }
+        if (err) {
+          reject(err);
+        }
+
+
         resolve(updateMessage(payload, data));
     });
   });
+
+
+
+return watsonPromise;
+
 };
 
+const MeLiPromise = new Promise((resolve, reject) => {
+    request('https://api.mercadolibre.com/users/226384143/', function (err, response, body) {
+      if (err) {
+        reject(err);
+      }
+      resolve(body);
+    });
+
+});
+const googlePromise = new Promise((resolve, reject) => {
+    request('http://www.google.com', function (err, response, body) {
+      if (err) {
+        reject(err);
+      }
+      resolve(body);
+    });
+
+});
 
 /**
  * Updates the response text using the intent confidence
